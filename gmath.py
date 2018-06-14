@@ -1,0 +1,83 @@
+import math
+from display import *
+
+AMBIENT = 0
+DIFFUSE = 1
+SPECULAR = 2
+LOCATION = 0
+COLOR = 1
+SPECULAR_EXP = 4
+
+#lighting functions
+def get_lighting(normal, view, ambient, light, areflect, dreflect, sreflect ):
+    #setting variables
+    normal = normalize(normal)
+    light[LOCATION] = normalize(light[LOCATION])
+    view = normalize(view)
+    amb = calculate_ambient(ambient, areflect)
+    diff = calculate_diffuse(light, dreflect, normal)
+    spec = calculate_specular(light, sreflect, view, normal)
+    #placement
+    return limit_color([x+y+z for x,y,z in zip(amb, diff, spec)]) 
+
+def calculate_ambient(alight, areflect):
+    ans = [int(alight[i] * areflect[i]) for i in range(len(alight))]
+    return ans
+
+def calculate_diffuse(light, dreflect, normal):
+    if dot_product(normal, light[LOCATION]) < 0: 
+        return [0, 0, 0]
+    
+    return [int(light[COLOR][i] * dreflect[i] * dot_product(normal, light[LOCATION])) for i in range(len(dreflect))]
+
+def calculate_specular(light, sreflect, view, normal):
+    if dot_product(normal, light[LOCATION]) > 0: 
+        return [0, 0, 0]
+    
+    l = []
+    for i in range(len(normal)): 
+        l.append(normal[i]*(dot_product(normal, light[LOCATION])) - light[LOCATION][i])
+        exp = dot_product(l, view) ** SPECULAR_EXP
+    return [int(light[COLOR][i] * sreflect[i] * exp) for i in range(len(light[COLOR]))]
+
+def limit_color(color):
+    for i in range(len(color)): 
+        if color[i] > 255: 
+            color[i] = 255 
+        if color[i] < 0: 
+            color[i] = 0
+    return color 
+#vector functions
+def normalize(vector):
+    norm = 0
+    for i in vector: 
+        norm += i ** 2 
+    norm = math.sqrt(norm)
+    for i in range(len(vector)): 
+        vector[i] = vector[i] / norm 
+    return vector 
+
+def dot_product(a, b):
+    prod = 0
+    for i in range(len(a)): 
+        prod += a[i] * b[i] 
+    return prod
+def calculate_normal(polygons, i):
+
+    A = [0, 0, 0]
+    B = [0, 0, 0]
+    N = [0, 0, 0]
+
+    A[0] = polygons[i+1][0] - polygons[i][0]
+    A[1] = polygons[i+1][1] - polygons[i][1]
+    A[2] = polygons[i+1][2] - polygons[i][2]
+
+    B[0] = polygons[i+2][0] - polygons[i][0]
+    B[1] = polygons[i+2][1] - polygons[i][1]
+    B[2] = polygons[i+2][2] - polygons[i][2]
+
+    N[0] = A[1] * B[2] - A[2] * B[1]
+    N[1] = A[2] * B[0] - A[0] * B[2]
+    N[2] = A[0] * B[1] - A[1] * B[0]
+
+    return N
